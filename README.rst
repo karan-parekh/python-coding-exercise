@@ -18,7 +18,7 @@ We want the ability to split a cable ``n`` times into the longest equal integer 
 The new behaviour we are asking you to write is to complete a ``class`` that will split a cable ``n`` times into equal integer lengths as cited above, i.e. if you have::
 
     given_cable = Cable(10, "coconuts")
-    result = Splitter().split(given_cable, 1))
+    result = Splitter().split(given_cable, 1)
 
 The ``result`` will be an array with two ``Cable`` with a length of ``5``.
 
