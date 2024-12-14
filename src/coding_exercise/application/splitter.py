@@ -1,8 +1,9 @@
+import os
 import logging
 from coding_exercise.domain.model.cable import Cable
-import os
 
-DEBUG = os.getenv("DEBUG", "False") # Usually I use dotenv but since it's just one file, os.getenv suffice.
+# Usually I use dotenv but since it's just one file, os.getenv is sufficient.
+DEBUG = os.getenv("DEBUG", "False")
 
 logging.basicConfig(
     level=logging.DEBUG if DEBUG=="True" else logging.WARNING,
@@ -19,6 +20,7 @@ class Splitter:
         self.result = []
         self.cable_count = 0
         self.last_count = 0
+        self.padding = None
 
     def __validate(self, cable: Cable, times: int):
         valid = True
@@ -44,49 +46,54 @@ class Splitter:
         self.__validate(cable, times)
         name = cable.name
         length = cable.length
-        parts = times + 1
+        pieces = times + 1 
 
-        logging.debug(f"For a cable of length {length}, split it {times} times. This means that there will be {parts} parts")
+        logging.debug(f"Cable of length {length}. Split {times} times. Results in {pieces} pieces")
 
         if not self.longest_int:
-            self.longest_int = length // parts
+            self.longest_int = length // pieces
 
-        logging.debug(f"Longest integer length is {self.longest_int}")
+        logging.debug(f"Longest integer length {self.longest_int}")
         
         if self.longest_int == 1:
-            self.cable_count = length
-            padding = len(str(self.cable_count))
-            result = []
-            for c in range(length):
-                tail = f"{c}".zfill(padding)
-                result.append(Cable(1, f"{name}-{tail}"))
-
-            return result
+            # if the longest int is 1, then the cable will be divided in the same number of pieces as the length of the cable
+            return self.cables_of_len_1(length, name)
         
         remaining_len = length - (self.longest_int * times)
                        
         if not self.cable_count:
-            self.cable_count = parts+1 if remaining_len > self.longest_int else parts
+            self.cable_count = pieces+1 if remaining_len > self.longest_int else pieces
 
-        padding = len(str(self.cable_count))
+        self.padding = len(str(self.cable_count))
 
-        logging.debug(f"appending cable of len {self.longest_int} to the result array, {times} times")
-        for c in range(times):
-            tail = f"{self.last_count}".zfill(padding)
-            self.result.append(Cable(self.longest_int, f"{name}-{tail}"))
-            self.last_count += 1
+        logging.debug(f"Appending {times} cables of len {self.longest_int} to the result array")
+        self.append_to_result(self.longest_int, name, times)
 
         if remaining_len > self.longest_int:
-            logging.debug(f"Since remaining len {remaining_len} > longest int {self.longest_int}")
+            logging.debug(f"Remaining len {remaining_len} > longest int {self.longest_int}")
             remaining_times = remaining_len // self.longest_int
             logging.debug(f"Split it again {remaining_times} times")
             self.split(Cable(remaining_len, name), remaining_times)
+
         elif remaining_len:
-            logging.debug(f"Since remaining len {remaining_len} <= longest int {self.longest_int}")
-            logging.debug(f"We append cable of remaining len {remaining_len} to the result array")
-            tail = f"{self.last_count}".zfill(padding)
-            self.result.append(Cable(remaining_len, f"{name}-{tail}"))
-            self.last_count += 1
+            logging.debug(f"Remaining len {remaining_len} <= longest int {self.longest_int}")
+            logging.debug(f"Appending 1 cable of remaining len {remaining_len} to the result array")
+            self.append_to_result(remaining_len, name, times=1)
 
         logging.debug(f"Total cables in array: {len(self.result)}")
         return self.result
+
+    def append_to_result(self, length, name, times):
+        for _ in range(times):
+            tail = f"{self.last_count}".zfill(self.padding)
+            self.result.append(Cable(length, f"{name}-{tail}"))
+            self.last_count += 1
+    
+    def cables_of_len_1(self, length, name):
+        padding = len(str(length))
+        result = []
+        for c in range(length):
+            tail = f"{c}".zfill(padding)
+            result.append(Cable(1, f"{name}-{tail}"))
+
+        return result
